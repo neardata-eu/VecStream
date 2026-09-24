@@ -1,0 +1,88 @@
+
+.lithops_config
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.pyo
+*.pyd
+*.pdb
+*.log
+*.sqlite3
+*.db
+*.ipynb_checkpoints/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# VSCode
+.vscode/
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+.terraform.lock.hcl
+
+# AWS Lambda packages
+*.zip
+
+# Environment
+.env
+.env.*
+*.env
+
+# Results and data
+results/
+*.csv
+*.json
+
+# Ignore deployment artifacts
+code.zip
+
+# Ignore test cache
+.pytest_cache/
+
+# Ignore lock files
+uv.lock
+Pipfile.lock
+poetry.lock
+
+# Ignore S3 cache or temp files
+*.bak
+*.tmp
+
+# Ignore notebook output
+*.out
+
+# Ignore AWS credentials (if any)
+.aws/
+
+# Ignore user secrets
+secrets.*
+
+# Virtual environments
+.venv
+
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+bench-key.pem
+
+# Ignore datasets folder
+datasets/
