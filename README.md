@@ -43,10 +43,10 @@ Put your vector datasets under `datasets/` (gitignored).
 
 ## Deploy Kafka on EKS
 
-Kafka runs on EKS with the Strimzi operator. The deployment lives in `benchmarks/ingestion/deployment/vecstream/kafka_on_eks/`.
+Kafka runs on EKS with the Strimzi operator. The deployment lives in `deployment/kafka_on_eks/`.
 
 ```bash
-cd benchmarks/ingestion/deployment/vecstream/kafka_on_eks
+cd deployment/kafka_on_eks
 
 # Recommended for the full pipeline: enable tiered storage so sealed segments
 # are written to S3 and trigger the async indexer. Edit terraform/terraform.tfvars:
@@ -59,7 +59,7 @@ kubectl get pods -n kafka                       # wait until all pods are Runnin
 ./helper.sh get-external-bootstrap-servers
 ```
 
-Save the bootstrap servers and the tiered storage bucket name: both are inputs to the Lambda deployment in the next step. `deploy.sh` auto-generates a `deployment_id` in `terraform.tfvars` on first run; do not edit it manually. The full reference, including monitoring and helper commands, is in [benchmarks/ingestion/deployment/vecstream/kafka_on_eks/README.md](benchmarks/ingestion/deployment/vecstream/kafka_on_eks/README.md).
+Save the bootstrap servers and the tiered storage bucket name: both are inputs to the Lambda deployment in the next step.A fresh clone starts clean: `deploy.sh` regenerates `terraform.tfvars` (with a fresh `deployment_id`) on first run; do not edit it manually. The full reference, including monitoring and helper commands, is in [deployment/kafka_on_eks/README.md](deployment/kafka_on_eks/README.md).
 
 ## Deploy the Lambda fleet
 
@@ -103,6 +103,10 @@ curl -sS -X POST "$L1_URL" -H 'content-type: application/json' -d '{"query_type"
 ```
 
 Repeat with `l2_lambda_function_urls` and `kafka_lambda_function_urls`. Expected responses: `{"message": "Lambda warmup complete."}` for L1/L2 and `{"message": "Warmup completed successfully."}` for Kafka, all with HTTP 200. More deployment details, including the VPC and lambda count customizations, are in [deployment/README.md](deployment/README.md).
+
+## Deploy the benchmark clients
+
+To run a suite from AWS instead of your laptop, provision an EC2 benchmark client. One parameterized Terraform + Ansible stack at [deployment/benchmark_clients/](deployment/benchmark_clients/README.md) serves all three evaluation suites: the suite is selected by the active terraform workspace (`ingestion`, `static-queries` or `streaming-queries`), each workspace keeps its own state and SSH key, and the merged ansible playbooks install the toolchain and sync the repo to the instance.
 
 ## Ingesting vectors
 
@@ -172,5 +176,15 @@ asyncio.run(main())
 ```
 
 `search` fans out to `num_partitions_to_search` partitions (default 16), merges partial results through the reduce tree with `reduce_branching_factor` (default 16) and `map_invocations_per_lambda` (default 16), and returns distances, ids and per-stage timestamps.
+
+## Teardown
+
+```bash
+cd deployment && terraform destroy                                        # Lambda fleet, IAM role, code bucket
+cd deployment/kafka_on_eks && ./cleanup.sh                                # EKS, Kafka, orphaned EBS
+cd deployment/benchmark_clients/terraform && terraform workspace select <suite> && terraform destroy   # benchmark clients
+```
+
+`terraform destroy` does not remove the published Lambda layer; delete it manually with `aws lambda delete-layer-version` if you want a clean account.
 
 

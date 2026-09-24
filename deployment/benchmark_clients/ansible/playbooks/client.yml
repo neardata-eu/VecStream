@@ -1,0 +1,124 @@
+---
+- name: Set up benchmark client
+  hosts: aws_ec2
+  become: true
+  vars:
+    project_dir: /opt/vecstream
+    uv_install_url: https://astral.sh/uv/install.sh
+    local_root: "{{ playbook_dir }}/../../../.."
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install system packages
+      apt:
+        name:
+          - curl
+          - python3
+          - python3-venv
+          - python3-pip
+          - rsync
+        state: present
+
+    - name: Install AWS CLI via Snap
+      snap:
+        name: aws-cli
+        classic: true
+        state: present
+
+    - name: Install uv
+      shell: curl -LsSf {{ uv_install_url }} | sh
+      args:
+        creates: /home/ubuntu/.local/bin/uv
+      become: false
+      environment:
+        HOME: /home/ubuntu
+
+    - name: Install Python 3.13
+      command: /home/ubuntu/.local/bin/uv python install 3.13
+      become: false
+      environment:
+        HOME: /home/ubuntu
+
+    - name: Create project directory
+      file:
+        path: "{{ project_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Synchronize benchmarks
+      synchronize:
+        src: "{{ local_root }}/benchmarks/"
+        dest: "{{ project_dir }}/benchmarks/"
+        delete: yes
+        rsync_opts:
+          - "--exclude=__pycache__"
+          - "--exclude=*.pyc"
+      become: false
+
+    - name: Synchronize vecstream library
+      synchronize:
+        src: "{{ local_root }}/vecstream/"
+        dest: "{{ project_dir }}/vecstream/"
+        delete: yes
+        rsync_opts:
+          - "--exclude=__pycache__"
+          - "--exclude=*.pyc"
+      become: false
+
+    - name: Synchronize pyproject.toml
+      synchronize:
+        src: "{{ local_root }}/pyproject.toml"
+        dest: "{{ project_dir }}/pyproject.toml"
+      become: false
+
+    - name: Install project dependencies
+      command: /home/ubuntu/.local/bin/uv sync
+      args:
+        chdir: "{{ project_dir }}"
+      become: false
+      environment:
+        HOME: /home/ubuntu
+        PATH: "/home/ubuntu/.local/bin:{{ ansible_env.PATH }}"
+
+    - name: Create datasets directory
+      file:
+        path: "{{ project_dir }}/datasets"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Download datasets from S3
+      command: aws s3 sync s3://vecstream-benchmarks-data/ "{{ project_dir }}/datasets/"
+      become: false
+      when: "'tag_Project_static_queries_bench' in group_names"
+
+    - name: Copy datasets samples
+      copy:
+        src: "{{ local_root }}/datasets/article_validation/samples/"
+        dest: "{{ project_dir }}/datasets/samples/"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+      become: false
+      when: "'tag_Project_ingestion_bench' in group_names"
+
+    - name: Synchronize query files
+      synchronize:
+        src: "{{ local_root }}/datasets/article_validation/queries/"
+        dest: "{{ project_dir }}/datasets/queries/"
+        delete: yes
+      become: false
+      when: "'tag_Project_streaming_queries_bench' in group_names"
+
+    - name: Synchronize sample files
+      synchronize:
+        src: "{{ local_root }}/datasets/article_validation/samples/"
+        dest: "{{ project_dir }}/datasets/samples/"
+        delete: yes
+      become: false
+      when: "'tag_Project_streaming_queries_bench' in group_names"

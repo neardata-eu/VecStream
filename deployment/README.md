@@ -3,6 +3,15 @@
 Deploys L1, L2, and Kafka search Lambdas into a VPC with Gateway endpoints
 for standard S3 and S3 Express One Zone. 
 
+This README covers the Lambda fleet at the root of `deployment/`. Two sibling
+subfolders hold the rest of the deployment stacks:
+
+- [kafka_on_eks/](kafka_on_eks/README.md): Apache Kafka on EKS with the
+  Strimzi operator, including optional tiered storage to S3.
+- [benchmark_clients/](benchmark_clients/README.md): the EC2 benchmark client
+  for the ingestion, static queries and streaming queries suites, one
+  terraform workspace per suite plus the ansible playbooks that provision it.
+
 ## Prerequisites
 
 - AWS CLI v2, authenticated against the target account

@@ -251,7 +251,7 @@ resource "aws_lambda_function_event_invoke_config" "kafka_quicksvdb_invoke" {
 # handler trains a FAISS IVF index from the new log segment and uploads it to
 # S3. IVF training needs more memory and a longer timeout than the query
 # lambdas. The tiered-storage bucket is created by a different Terraform root
-# (benchmarks/ingestion/deployment/vecstream/kafka_on_eks), so its name is a
+# (deployment/kafka_on_eks), so its name is a
 # variable here; leaving it empty skips the notification wiring. No Function
 # URL (nothing calls this Lambda over HTTP) and no invoke config: the handler
 # is idempotent (the registry merge skips keys already present), so

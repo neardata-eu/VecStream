@@ -1,0 +1,44 @@
+---
+- name: Resync code on benchmark client
+  hosts: aws_ec2
+  become: true
+  vars:
+    project_dir: /opt/vecstream
+    uv_install_url: https://astral.sh/uv/install.sh
+    local_root: "{{ playbook_dir }}/../../../.."
+
+  tasks:
+    - name: Synchronize benchmarks
+      synchronize:
+        src: "{{ local_root }}/benchmarks/"
+        dest: "{{ project_dir }}/benchmarks/"
+        delete: yes
+        rsync_opts:
+          - "--exclude=__pycache__"
+          - "--exclude=*.pyc"
+      become: false
+
+    - name: Synchronize vecstream library
+      synchronize:
+        src: "{{ local_root }}/vecstream/"
+        dest: "{{ project_dir }}/vecstream/"
+        delete: yes
+        rsync_opts:
+          - "--exclude=__pycache__"
+          - "--exclude=*.pyc"
+      become: false
+
+    - name: Synchronize pyproject.toml
+      synchronize:
+        src: "{{ local_root }}/pyproject.toml"
+        dest: "{{ project_dir }}/pyproject.toml"
+      become: false
+
+    - name: Install project dependencies
+      command: /home/ubuntu/.local/bin/uv sync
+      args:
+        chdir: "{{ project_dir }}"
+      become: false
+      environment:
+        HOME: /home/ubuntu
+        PATH: "/home/ubuntu/.local/bin:{{ ansible_env.PATH }}"

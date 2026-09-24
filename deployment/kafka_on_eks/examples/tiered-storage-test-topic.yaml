@@ -1,0 +1,23 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: tiered-storage-verification
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: kafka-on-eks
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    # 1. Activate remote upload tasks for this topic
+    remote.log.storage.enable: "true"
+    
+    # 2. Set aggressive local retention for testing (10MB)
+    # Once local logs exceed 10MB, closed segments get shipped to S3
+    local.retention.bytes: 10485760 
+    
+    # 3. Overall retention window (Local + S3 total capacity)
+    retention.bytes: 53687091200 # 50GB
+    
+    # 4. Drop segment sizes so they roll over and trigger uploads quickly
+    segment.bytes: 5242880 # 5MB segments

@@ -1,0 +1,37 @@
+fullnameOverride: prometheus
+cleanPrometheusOperatorObjectNames: true
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    scrapeTimeout: 10s
+    storageSpec:
+      volumeClaimTemplate:
+        metadata:
+          name: data
+        spec:
+          storageClassName: gp3
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 50Gi
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+
+prometheus-node-exporter:
+  extraArgs:
+    - --collector.ethtool
+    - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+    - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
+
+alertmanager:
+  enabled: false
+
+grafana:
+  enabled: true
+  adminPassword: "${grafana_password}"
+  defaultDashboardsEnabled: true
